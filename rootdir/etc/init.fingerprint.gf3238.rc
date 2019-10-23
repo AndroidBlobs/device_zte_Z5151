@@ -1,0 +1,39 @@
+#
+# Goodix fingerprint
+#
+on fs
+	#goodix fingerprint
+	chown system system /dev/goodix_fp
+	#goodix fingerprint end
+
+
+#synaFpTest for Emode test
+service gf_pv_test /vendor/bin/gf_pv_test
+    class late_start
+    user root
+    group system
+    oneshot
+    disabled
+
+on property:debug.synafp.test-start=1 && property:ro.hardware.fingerprint=gf3238
+    start gf_pv_test
+
+on property:debug.synafp.test-start=0 && property:ro.hardware.fingerprint=gf3238
+    stop gf_pv_test
+
+service alipayServiced /system/bin/alipayServiced
+   class late_start
+   user system
+
+service fps_hal /vendor/bin/hw/android.hardware.biometrics.fingerprint@2.1-service
+    # "class hal" causes a race condition on some devices due to files created
+    # in /data. As a workaround, postpone startup until later in boot once
+    # /data is mounted.
+    class late_start
+    user system
+    group system input
+    disabled
+
+on property:ro.hardware.fingerprint=gf3238
+    start fps_hal
+

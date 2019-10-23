@@ -1,0 +1,116 @@
+#
+# Silead fingerprint
+#
+on init
+# Add by sileadinc begin
+     mkdir /mnt/silead/ 0777 shell shell
+     mkdir /mnt/silead/tmp 0777 shell shell
+     mount tmpfs tmpfs /mnt/silead/tmp mode=0777,gid=1000
+#    remove the comments if cts need to be take into consider,like renbao(taiwan)
+#     write /mnt/silead/tmp/stub.txt ready
+#     chmod 777 /mnt/silead/tmp/stub.txt
+# Add by sileadinc end
+
+on post-fs-data
+# Add by sileadinc begin
+# FingerPrint
+    chmod 0666 /dev/silead_fp_dev
+    chmod 0755 /vendor/bin/fpsvcd
+    chmod 0755 /vendor/bin/fpsvcd_ca
+    chmod 0755 /vendor/bin/fpsvcd_ca_beanpod
+    chmod 0755 /vendor/bin/fpsvcd_ca_qsee
+    chmod 0755 /vendor/bin/fpsvcd_ca_watch
+
+    chmod 0755 /vendor/bin/fpfslockd
+    chmod 0755 /vendor/bin/factorytoold
+    chmod 0755 /vendor/bin/factorytoold_ca
+    chmod 0755 /vendor/bin/factorytoold_ca_beanpod
+    chmod 0755 /vendor/bin/factorytoold_ca_qsee
+    chmod 0755 /vendor/bin/factorytoold_ca_watch
+    chmod 0755 /vendor/bin/factorytoold_cmd
+    chmod 0755 /vendor/bin/factory_test.sh
+    
+    #chmod 0755 /vendor/bin/fingerprintd_silead
+    chmod 0755 /vendor/bin/cloudtestsuited
+    chmod 0755 /vendor/bin/checksilead
+    chmod 0755 /vendor/bin/checksilead_ca
+    chmod 0755 /vendor/bin/checksilead_ca_beanpod
+    chmod 0755 /vendor/bin/checksilead_ca_watch
+    chmod 0755 /vendor/bin/checksilead_ca_qsee
+
+    mkdir /data/silead 0777 shell shell
+    chown system system /sys/silead/fp_wake_lock
+    chown system system /sys/silead/fp_wake_unlock
+    symlink /vendor/etc/silead /mnt/silead/config
+# Add by sileadinc end
+
+on init
+# Add by sileadinc begin
+on property:sys.service.silead=enabled
+    start fpsvcd
+
+on property:sys.service.silead=disabled
+    stop fpsvcd
+
+#service checksilead /system/bin/checksilead_ca_qsee
+#    class late_start
+#    user system
+#    group system
+#    oneshot
+
+service fpsvcd /vendor/bin/fpsvcd_ca_qsee -uuid 323054570007000246696E6765725000
+#   disabled
+    class late_start
+    user system
+    group system
+    disabled
+
+#on property:ro.hardware.fingerprint=silead
+#    start fps_hal
+
+service factorytoold /vendor/bin/factorytoold_ca_qsee
+    class late_start
+    user system
+    group system
+    disabled
+
+service FPTestStart /vendor/bin/factory_test.sh
+    class late_start
+    user system
+    group system
+    oneshot
+    disabled
+
+service FPTestStop /vendor/bin/factorytoold_cmd -k
+    class late_start
+    user system
+    group system
+    oneshot
+    disabled
+
+on property:debug.synafp.test-start=1 && property:ro.hardware.fingerprint=silead
+    start FPTestStart
+
+on property:debug.synafp.test-start=0 && property:ro.hardware.fingerprint=silead
+    start FPTestStop
+# Add by sileadinc end
+
+#
+# Connectivity related services (End)
+#
+
+service fps_hal /vendor/bin/hw/android.hardware.biometrics.fingerprint@2.1-service
+    # "class hal" causes a race condition on some devices due to files created
+    # in /data. As a workaround, postpone startup until later in boot once
+    # /data is mounted.
+    class late_start
+    user system
+    group system input
+    disabled
+
+on property:ro.hardware.fingerprint=silead
+    start fpsvcd
+    start factorytoold
+    start fps_hal
+
+
